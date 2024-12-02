@@ -5,21 +5,13 @@ pragma solidity ^0.8.17;
 import {IToken} from "./IToken.sol";
 
 
-abstract contract Vault is IToken {
+abstract contract NFTTokens is IToken {
     address public asset;
 
-    mapping(address => uint256) internal _balances;
-    mapping(address => mapping ())
-
     constructor() {
-        address _asset,
-        string _name,
-        string _symbol,
-        string _decimals,
-        uint _tokenID,
-        address _onchainID,
-        string constant _version = "4.1.3",
-
+        string memory _name,
+        string memory _symbol,
+        address _asset
     }
     ERC20("Vault"){
         asset = _asset;
@@ -37,19 +29,14 @@ abstract contract Vault is IToken {
 
     event converted(uint tokenID, uint256 _amount);
 
-    event deposit(address _to,uint256 shares, uint256 assets);
+    event deposit(address _to,uint256 _amount);
 
-    event withdraw(address _to,uint256 shares,uint256 assets);
-
+    event withdraw(address _to,uint256 _amount);
     ///////////////////////////////////////////////
     // function
     /////////////////////////////////////////////
-    function setAsset(uint tokenID) public returns(address){
-
-    }
+    function setAsset() public returns()
     function getAsset()public view returns(address){
         
     }
-
-
 }
