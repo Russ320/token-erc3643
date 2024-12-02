@@ -138,7 +138,7 @@ contract Token is IToken,tokenVault{
             for(uint256 i =0; i< _fromList; i++){
                 forcedTransfer(_fromList[i],_toList[i],_amounts[i],_tokenID);
             }
-        };
+        }
 
         function batchFreezePartialTokens(address[] calldata _userAddresses,uint _tokenID, uint256[] calldata _amounts) external override{
             for(uint256 i=0; i<_userAddresses;i++){
@@ -157,7 +157,16 @@ contract Token is IToken,tokenVault{
         }
         
         function transfer(address _to,uint _tokenID,uint256 _amounts) external override whenNotPaused(_tokenID) returns(bool){
-
+            require(!_frozen[_to] && !_frozen[msg.sender], "wallet is frozen");
+            require(_amount <= balanceOf(msg.sender) - (_frozenTokens[msg.sender]), "Insufficient Balance");
+            if (_tokenIdentityRegistry.isVerified(_to) && _tokenCompliance.canTransfer(msg.sender, _to, _amount)) {
+                _transfer(msg.sender, _to, _amount,_tokenID);
+                _tokenCompliance.transferred(msg.sender, _to, _amount,_tokenID);
+                return true;
+            }
+            revert("Transfer not possible");
+        
+        
         }
         function totalSupply() external view override returns(uint256){
             return _totalSupply;
