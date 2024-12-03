@@ -60,7 +60,7 @@ interface  IToken is IERC20,ERC721 {
      *  `_amount` is the amount of tokens that are frozen
      *  '_time' is the period of frozen time of that token "default is unlimited"
      */
-    event TokensFrozen(address indexed _userAddress, uint256 _amount,uint256 _time,uint _tokenID);
+    event TokensFrozen(address indexed _userAddress, uint256 _amount,uint _tokenID);
 
     /**
      *  this event is emitted when a certain amount of tokens is unfrozen on a wallet
@@ -157,7 +157,7 @@ interface  IToken is IERC20,ERC721 {
      *  This function can only be called by a wallet set as agent of the token
      *  emits a `Paused` event
      */
-    function pause() external;
+    function pause(uint _tokenID) external;
 
     /**
      *  @dev unpauses the token contract, when contract is unpaused investors can transfer tokens
@@ -165,7 +165,7 @@ interface  IToken is IERC20,ERC721 {
      *  This function can only be called by a wallet set as agent of the token
      *  emits an `Unpaused` event
      */
-    function unpause() external;
+    function unpause(uint _tokenID) external;
 
     /**
      *  @dev sets an address frozen status for this token.

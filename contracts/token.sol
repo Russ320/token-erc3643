@@ -21,9 +21,21 @@ contract Token is IToken,tokenVault{
         string symbol;
         uint8 decimals;
         address onchainID;
+        uint64 startTime;
+        uint64 endTime;
     }
     mapping (uint256 => TokenMetadata) private tokenMetadata;
     mapping(uint256 =>bool) private tokenPaused;
+    mapping(address => bool) private accountFrozen
+    mapping(uint256 => mapping(address => uint256)) private _balances; // tokenID => userAddress => balance
+
+    struct UserData{
+        uint256 frozenTokens;
+        uint256 allowance;
+        uint256 asset;
+    }
+
+    mapping(uint => mapping(address => UserData)) private userData;
 
     /// modifier
     /// @dev Modifier to make a function callable only when the contract is not paused.
@@ -33,8 +45,12 @@ contract Token is IToken,tokenVault{
     }
 
     /// @dev Modifier to make a function callable only when the contract is paused.
-    modifier whenPaused(uint256 _tokenID) {
+    modifier whenPaused(uint _tokenID) {
         require(tokenPaused[_tokenID], "Pausable: not paused");
+        _;
+    }
+    modifier validToken(uint _tokenID){
+        require(_exists(_tokenID), "ERC5007: invalid tokenId");
         _;
     }
 
@@ -84,6 +100,14 @@ contract Token is IToken,tokenVault{
 
 
         }
+        function startTime(uint _tokenID) external view validToken(_tokenID) return(uint256){
+            return tokenMetadata[tokenID].startTime;
+        }
+
+        // @dev return the end time of the NFT as a UNIX timestamp
+        function endTime(uint _tokenID) external view validToken(_tokenID) return(uint256){
+            return tokenMetadata[tokenID].endTime;
+        }
 
         function setName(string calldata _name, uint calldata _tokenID) external override onlyOwner{
             require(keccak256(abi.encode(_name))!= keccak256(abi.encode("")),"invalid argument -empty string");
@@ -103,14 +127,47 @@ contract Token is IToken,tokenVault{
             tokenMetadata[_tokenID].onchainID = _onchainID;
             emit UpdatedTokenInformation(tokenMetadata[_tokenID].name,tokenMetadata[_tokenID].symbol,tokenMetadata[_tokenID].decimals,_TOKEN_VERSION,tokenMetadata[_tokenID].onchainID,_tokenID);
         }
-        function pauseToken(uint256 _tokenID) external onlyOwner whenNotPaused(_tokenID){
+        function pause(uint _tokenID) external onlyOwner validToken whenNotPaused(_tokenID){
             tokenPaused[_tokenID] = true;
-            emit TokenPaused(msg.sender,_tokenID);
+            emit Paused(msg.sender,_tokenID);
         }
 
-        function unpauseToken(uint256 _tokenID) external onlyOwner whenPaused(_tokenID){
+        function unpause(uint _tokenID) external onlyOwner validToken whenPaused(_tokenID){
             tokenPaused[_tokenID] = false;
             emit Unpaused(msg.sender,_tokenID);
+        }
+
+        function setAddressFrozen(address _userAddress, bool _freeze,uint64 _time) external override{
+            accountFrozen[_userAddress] = _freeze;
+            emit AddressFrozen(_userAddress,_freeze,msg.sender,_time);
+        }
+        function freezePartialTokens(address _userAddress,uint256 _amount,uint _tokenID) external override validToken(_tokenID){
+            uint balance = balanceOf(_userAddress,_tokenID);
+            require(balance >= userData[_tokenID][_userAddress].frozenTokens + _amount,"amount exceed the available wallet");
+            userData[_tokenID][_userAddress].frozenTokens += _amount;
+            emit TokensFrozen(_userAddress,_amount,_tokenID);
+        }
+
+        function unfreezePartialTokens(address _userAddress,uint256 _amount, uint _tokenID) external override validToken(_tokenID){
+            require(frozenTokensOf(_userAddress,_tokenID) >= _amount,"amount should be less than or equal to frozen tokens");
+            userData[_tokenID][_userAddress].frozenTokens -= _amount;
+            emit TokensUnfrozen(_userAddress,_amount,_tokenID);
+        }
+
+        // function setIdentityRegistry(address _identityRegistry) external{}
+        // function setCompliance(address _compliance)external{}
+        function forcedTransfer(address _from,address _to, uint256 _amount,uint _tokenID) external override onlyAgent returns(bool){
+            require(balanceOf(_from,_tokenID) >= _amount,"sender balance too low")
+            uint256 freeBalance = balanceOf(_from,_tokenID) - userData[_tokenID][_from].frozenTokens;
+            if(_amount > freeBalance){
+                uint256 tokenToUnFreeze = _amount - freeBalance;
+                userData[_tokenID][_from].frozenTokens -=  tokenToUnFreeze;
+                emit TokensUnfrozen(_from,tokenToUnFreeze,_tokenID);
+            }
+            if(_tokenIdentityRegistry.isVerified(_to)){
+                _transfer(_from,_to,_amount,_tokenID);
+
+            }
         }
         function batchTransfer(address[] calldata _toList,uint _tokenID,uint256[] calldata _amounts)external override{
             
@@ -204,6 +261,20 @@ contract Token is IToken,tokenVault{
         function version() external pure override returns (string memory) {
             return _TOKEN_VERSION;
         }
+        function balanceOf(address _user,uint _tokenID) public view returns(uint256){
+            return _balances[_tokenID][_user];
+        }
+        function frozenTokensOf(address _user, uint _tokenID) public view returns(uint256){
+            return userData[_tokenID][_user].frozenTokens;
+        }
 
-
+        function _transfer(address _from,address _to,address _amount,uint _tokenID) internal virtual{
+            require(_from != address(0),"error");
+            require(_to != address(0),"error");
+            
+            balanceOf[_tokenID][_from] -= _amount;
+            balanceOf[_tokenID][_from] += _amount;
+            emit Transfer(_from,_to,_amount,_tokenID);    
+        }
+        
 }
