@@ -4,6 +4,7 @@ pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "./tokenVault.sol";
 import "./IToken.sol";
 contract Token is IToken,tokenVault{
@@ -28,6 +29,7 @@ contract Token is IToken,tokenVault{
     mapping(uint256 =>bool) private tokenPaused;
     mapping(address => bool) private accountFrozen
     mapping(uint256 => mapping(address => uint256)) private _balances; // tokenID => userAddress => balance
+    mapping(address =>uint256) private _totalSupply;
 
     struct UserData{
         uint256 frozenTokens;
@@ -53,7 +55,7 @@ contract Token is IToken,tokenVault{
         require(_exists(_tokenID), "ERC5007: invalid tokenId");
         _;
     }
-
+    uint public tokenIDs[] = [GOLD,SILVER,IRON,DIA];
     
     /// function
 
@@ -169,6 +171,11 @@ contract Token is IToken,tokenVault{
 
             }
         }
+        // function recoveryAddress( address _lostWallet,address _newWallet,address _investorOnchainID) external override onlyAgent returns(bool){
+        //     require(totalBalanceOf(_lostWallet)!= 0,"no tokens to recover");
+        //     IIdentity _onchainID = IIdentity(_investorOnchainID);
+
+        // }
         function batchTransfer(address[] calldata _toList,uint _tokenID,uint256[] calldata _amounts)external override{
             
             for (uint256 i = 0; i <_toList.length;i++){
@@ -225,8 +232,8 @@ contract Token is IToken,tokenVault{
         
         
         }
-        function totalSupply() external view override returns(uint256){
-            return _totalSupply;
+        function totalSupply(address _user) external view override returns(uint256){
+            return _totalSupply[_user];
         }
         function identityRegistry() external view override returns(IIdentityRegistry){
             
@@ -236,10 +243,10 @@ contract Token is IToken,tokenVault{
             return _tokenCompliance;
         }
         function paused(uint _tokenID) external view override returns(bool){
-            return tokenPaused[_tokenID]
+            return tokenPaused[_tokenID];
         }
         function isFrozen(address _userAddress) external view override returns(bool){
-            return 
+            return accountFrozen[_userAddress];
         }
 
         function decimals(uint _tokenID) external view override returns(uint256){
@@ -264,10 +271,25 @@ contract Token is IToken,tokenVault{
         function balanceOf(address _user,uint _tokenID) public view returns(uint256){
             return _balances[_tokenID][_user];
         }
+        function totalBalanceOf(address _user) public view returns(uint256){
+            uint256 totalBalance;
+            for(uint256 i=0; i< tokenIDs.length; i++){
+                uint _tokenID = tokenIDs[i];
+                totalBalance += balanceOf[_tokenID][_user];
+            }
+            return totalBalance;
+        }
         function frozenTokensOf(address _user, uint _tokenID) public view returns(uint256){
             return userData[_tokenID][_user].frozenTokens;
         }
-
+        function getFrozenTokens(address _userAddress) public view returns(uint256){
+            uint256 totalFrozen;
+            for(uint256 i=0; i< tokenIDs.length; i++){
+                uint _tokenID = tokenIDs[i];
+                totalFrozen += userData[_tokenID][_userAddress].frozenTokens;
+            }
+            return totalFrozen;
+        }
         function _transfer(address _from,address _to,address _amount,uint _tokenID) internal virtual{
             require(_from != address(0),"error");
             require(_to != address(0),"error");
@@ -276,5 +298,22 @@ contract Token is IToken,tokenVault{
             balanceOf[_tokenID][_from] += _amount;
             emit Transfer(_from,_to,_amount,_tokenID);    
         }
+        function _burn(address _userAddress, uint256 _amount, uint _tokenID) internal virtual{
+            require(_userAddress != address(0),"burn from zero address");
+
+            _beforTokenTransfer(msg.sender,_userAddress,address(0),_tokenID,_amount,"");
+            balanceOf[_tokenID][_userAddress] -= _amount;
+            _totalSupply[_userAddress] -= _amount;
+            emit Transfer(_userAddress,address(0),_amount);
+        }
+        function _mint(address _userAddress,uint256 _amount,uint _tokenID) internal virtual{
+            require(_userAddress != address(0),"mint to zero address");
+
+            _beforTokenTransfer(msg.sender,address(0),_userAddress,_tokenID,_amount,"");
+            _totalSupply[_userAddress] += _amount;
+            balanceOf[_tokenID][_userAddress] += _amount;
+            emit Transfer(address(0),_userAddress,_amount);
+        }
         
+
 }
