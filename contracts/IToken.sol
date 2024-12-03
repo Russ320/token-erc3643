@@ -17,7 +17,7 @@ interface  IToken is IERC20,ERC721 {
      *  `_newVersion` is the version of the token, current version is 3.0
      *  `_newOnchainID` is the address of the onchainID of the token
      */
-    event UpdatedTokenInformation(string _newName,string _newSymbol, uint8 _newDecimals, string _newVersion, address _newOnchainID )
+    event UpdatedTokenInformation(string _newName,string _newSymbol, uint8 _newDecimals, string _newVersion, address _newOnchainID,uint _tokenID )
     
     /**
      *  this event is emitted when the IdentityRegistry has been set for the token
@@ -60,7 +60,7 @@ interface  IToken is IERC20,ERC721 {
      *  `_amount` is the amount of tokens that are frozen
      *  '_time' is the period of frozen time of that token "default is unlimited"
      */
-    event TokensFrozen(address indexed _userAddress, uint256 _amount,uint256 _time);
+    event TokensFrozen(address indexed _userAddress, uint256 _amount,uint _tokenID);
 
     /**
      *  this event is emitted when a certain amount of tokens is unfrozen on a wallet
@@ -68,7 +68,7 @@ interface  IToken is IERC20,ERC721 {
      *  `_userAddress` is the wallet of the investor that is concerned by the freezing status
      *  `_amount` is the amount of tokens that are unfrozen
      */
-    event TokensUnfrozen(address indexed _userAddress, uint256 _amount);
+    event TokensUnfrozen(address indexed _userAddress, uint256 _amount,uint _tokenID);
 
     /**
      *  this event is emitted when the token is paused
@@ -76,14 +76,14 @@ interface  IToken is IERC20,ERC721 {
      *  `_userAddress` is the address of the wallet that called the pause function
      *  `_time` is the time paused for
      */
-    event Paused(address _userAddress,uint256 _time);
+    event Paused(address _userAddress,uint tokenID,uint256 _time);
 
     /**
      *  this event is emitted when the token is unpaused
      *  the event is emitted by the unpause function
      *  `_userAddress` is the address of the wallet that called the unpause function
      */
-    event UnPaused(address _userAddress);
+    event UnPaused(address _userAddress,uint tokenID);
     // event PausedToken(address _OnchainID) 
 
     /**
@@ -93,23 +93,25 @@ interface  IToken is IERC20,ERC721 {
      */
     event addTokenAsset(uint tokenID,address _operator);
 
-    event converted(uint tokenID, uint256 _amount);
+    // event converted(uint tokenID, uint256 _amount);
 
-    event deposit(address _to,uint256 _amount);
+    // event deposit(address _to,uint256 _amount);
 
-    event withdraw(address _to,uint256 _amount);
+    // event withdraw(address _to,uint256 _amount);
 
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////////// 
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// function
-    /**
-     * 
-     * @param tokenID 
-     */
-    function getAsset() external view return(address);
+    // ///////////////////////////////////////////////////////////////////////////////////////////////////////////// 
+    // ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // /// function
+    // /**
+    //  * 
+    //  * @param tokenID 
+    //  */
+    // function getAsset() external view return(address);
 
-    function setAsset(uint tokenID) external;
-    function totalAssets() external view return(uint256);
+    // function setAsset(uint tokenID) external;
+    // function totalAssets() external view return(uint256);
+    // function convertToShares(uint asset_amount) external return(uint256 );
+    // function convertToAsset(uint share_amount) external return()
     /**
      * @dev return the start time of the NFT as a UNIX timestamp.
      * @param tokenID id of the NFT token
@@ -132,7 +134,7 @@ interface  IToken is IERC20,ERC721 {
      *  Only the owner of the token smart contract can call this function
      *  emits a `UpdatedTokenInformation` event
      */
-    function setName(string calldata _name) external;
+    function setName(string calldata _name,uint _tokenID) external;
 
     /**
      *  @dev sets the token symbol
@@ -140,7 +142,7 @@ interface  IToken is IERC20,ERC721 {
      *  Only the owner of the token smart contract can call this function
      *  emits a `UpdatedTokenInformation` event
      */
-    function setSymbol(string calldata _symbol) external;
+    function setSymbol(string calldata _symbol,uint _tokenID) external;
 
     /**
      *  @dev sets the onchain ID of the token
@@ -148,14 +150,14 @@ interface  IToken is IERC20,ERC721 {
      *  Only the owner of the token smart contract can call this function
      *  emits a `UpdatedTokenInformation` event
      */
-    function setOnchainID(address _onchainID) external;
+    function setOnchainID(address _onchainID,uint _tokenID) external;
 
     /**
      *  @dev pauses the token contract, when contract is paused investors cannot transfer tokens anymore
      *  This function can only be called by a wallet set as agent of the token
      *  emits a `Paused` event
      */
-    function pause() external;
+    function pause(uint _tokenID) external;
 
     /**
      *  @dev unpauses the token contract, when contract is unpaused investors can transfer tokens
@@ -163,7 +165,7 @@ interface  IToken is IERC20,ERC721 {
      *  This function can only be called by a wallet set as agent of the token
      *  emits an `Unpaused` event
      */
-    function unpause() external;
+    function unpause(uint _tokenID) external;
 
     /**
      *  @dev sets an address frozen status for this token.
@@ -181,7 +183,7 @@ interface  IToken is IERC20,ERC721 {
      *  This function can only be called by a wallet set as agent of the token
      *  emits a `TokensFrozen` event
      */
-    function freezePartialTokens(address _userAddress, uint256 _amount) external;
+    function freezePartialTokens(address _userAddress, uint256 _amount,uint _tokenID) external;
 
     /**
      *  @dev unfreezes token amount specified for given address
@@ -190,7 +192,7 @@ interface  IToken is IERC20,ERC721 {
      *  This function can only be called by a wallet set as agent of the token
      *  emits a `TokensUnfrozen` event
      */
-    function unfreezePartialTokens(address _userAddress, uint256 _amount) external;
+    function unfreezePartialTokens(address _userAddress, uint256 _amount,uint _tokenID) external;
 
     /**
      *  @dev sets the Identity Registry for the token
@@ -228,7 +230,8 @@ interface  IToken is IERC20,ERC721 {
     function forcedTransfer(
         address _from,
         address _to,
-        uint256 _amount
+        uint256 _amount,
+        uint _tokenID
     ) external returns (bool);
 
     /**
@@ -236,11 +239,12 @@ interface  IToken is IERC20,ERC721 {
      *  Improved version of default mint method. Tokens can be minted
      *  to an address if only it is a verified address as per the security token.
      *  @param _to Address to mint the tokens to.
+     *  @param _tokenID id of token
      *  @param _amount Amount of tokens to mint.
      *  This function can only be called by a wallet set as agent of the token
      *  emits a `Transfer` event
      */
-    function mint(address _to, uint256 _amount) external;
+    function mint(address _to,uint _tokenID, uint256 _amount) external;
 
     /**
      *  @dev burn tokens on a wallet
@@ -255,7 +259,7 @@ interface  IToken is IERC20,ERC721 {
      *  emits a `TokensUnfrozen` event if `_amount` is higher than the free balance of `_userAddress`
      *  emits a `Transfer` event
      */
-    function burn(address _userAddress, uint256 _amount) external;
+    function burn(address _userAddress,uint _tokenID, uint256 _amount) external;
 
     /**
      *  @dev recovery function used to force transfer tokens from a
@@ -286,7 +290,7 @@ interface  IToken is IERC20,ERC721 {
      *  @param _amounts The number of tokens to transfer to the corresponding receiver
      *  emits _toList.length `Transfer` events
      */
-    function batchTransfer(address[] calldata _toList, uint256[] calldata _amounts) external;
+    function batchTransfer(address[] calldata _toList, uint _tokenID,uint256[] calldata _amounts) external;
 
     /**
      *  @dev function allowing to issue forced transfers in batch
@@ -304,7 +308,8 @@ interface  IToken is IERC20,ERC721 {
     function batchForcedTransfer(
         address[] calldata _fromList,
         address[] calldata _toList,
-        uint256[] calldata _amounts
+        uint256[] calldata _amounts,
+        uint _tokenID
     ) external;
 
     /**
@@ -317,7 +322,7 @@ interface  IToken is IERC20,ERC721 {
      *  This function can only be called by a wallet set as agent of the token
      *  emits _toList.length `Transfer` events
      */
-    function batchMint(address[] calldata _toList, uint256[] calldata _amounts) external;
+    function batchMint(address[] calldata _toList,uint calldata _tokenID, uint256[] calldata _amounts) external;
 
     /**
      *  @dev function allowing to burn tokens in batch
@@ -329,7 +334,7 @@ interface  IToken is IERC20,ERC721 {
      *  This function can only be called by a wallet set as agent of the token
      *  emits _userAddresses.length `Transfer` events
      */
-    function batchBurn(address[] calldata _userAddresses, uint256[] calldata _amounts) external;
+    function batchBurn(address[] calldata _userAddresses,uint _tokenID, uint256[] calldata _amounts) external;
 
     /**
      *  @dev function allowing to set frozen addresses in batch
@@ -351,7 +356,7 @@ interface  IToken is IERC20,ERC721 {
      *  This function can only be called by a wallet set as agent of the token
      *  emits _userAddresses.length `TokensFrozen` events
      */
-    function batchFreezePartialTokens(address[] calldata _userAddresses, uint256[] calldata _amounts) external;
+    function batchFreezePartialTokens(address[] calldata _userAddresses,uint _tokenID, uint256[] calldata _amounts) external;
 
     /**
      *  @dev function allowing to unfreeze tokens partially in batch
@@ -362,7 +367,7 @@ interface  IToken is IERC20,ERC721 {
      *  This function can only be called by a wallet set as agent of the token
      *  emits _userAddresses.length `TokensUnfrozen` events
      */
-    function batchUnfreezePartialTokens(address[] calldata _userAddresses, uint256[] calldata _amounts) external;
+    function batchUnfreezePartialTokens(address[] calldata _userAddresses,uint _tokenID, uint256[] calldata _amounts) external;
 
     /**
      * @dev Returns the number of decimals used to get its user representation.
@@ -418,6 +423,11 @@ interface  IToken is IERC20,ERC721 {
     function paused() external view returns (bool);
 
     /**
+     * @dev returns id of a token
+     */
+    function tokenID() external view returns(uint);
+
+    /**
      *  @dev Returns the freezing status of a wallet
      *  if isFrozen returns `true` the wallet is frozen
      *  if isFrozen returns `false` the wallet is not frozen
@@ -428,11 +438,19 @@ interface  IToken is IERC20,ERC721 {
     function isFrozen(address _userAddress) external view returns (bool);
 
     /**
-     *  @dev Returns the amount of tokens that are partially frozen on a wallet
+     *  @dev Returns the total amount of tokens that are partially frozen on a wallet
      *  the amount of frozen tokens is always <= to the total balance of the wallet
      *  @param _userAddress the address of the wallet on which getFrozenTokens is called
      */
     function getFrozenTokens(address _userAddress) external view returns (uint256);
+
+    /**
+     * @dev Returns the amount of paricular tokens that partially frozen on a wallet
+     * the amount of frozen tokens is always <= to the total balance of the wallet
+     * @param _userAddress  the address of the wallet 
+     * @param _tokenID the ID of token
+     */
+    function getFrozenPatialTokens(address _userAddress, uint _tokenID) external view returns(uint256);
 
 
 
